@@ -4,7 +4,7 @@ class RoleController {
   // Get all roles
   async getAllRoles(req, res) {
     try {
-      const roles = await Role.query();
+      const roles = await Role.find();
       res.json({
         success: true,
         data: roles
@@ -22,7 +22,7 @@ class RoleController {
   async getRoleById(req, res) {
     try {
       const { id } = req.params;
-      const role = await Role.query().findById(id);
+      const role = await Role.findById(id);
 
       if (!role) {
         return res.status(404).json({
@@ -58,7 +58,7 @@ class RoleController {
       }
 
       // Check if role already exists
-      const existingRole = await Role.query().findOne({ name });
+      const existingRole = await Role.findOne({ name });
       if (existingRole) {
         return res.status(400).json({
           success: false,
@@ -66,7 +66,7 @@ class RoleController {
         });
       }
 
-      const newRole = await Role.query().insert({
+      const newRole = await Role.create({
         name,
         description
       });
@@ -92,7 +92,7 @@ class RoleController {
       const { name, description } = req.body;
 
       // Check if role exists
-      const role = await Role.query().findById(id);
+      const role = await Role.findById(id);
       if (!role) {
         return res.status(404).json({
           success: false,
@@ -102,7 +102,7 @@ class RoleController {
 
       // Check if new name already exists (if name is being updated)
       if (name && name !== role.name) {
-        const existingRole = await Role.query().findOne({ name });
+        const existingRole = await Role.findOne({ name });
         if (existingRole) {
           return res.status(400).json({
             success: false,
@@ -111,10 +111,14 @@ class RoleController {
         }
       }
 
-      const updatedRole = await Role.query().patchAndFetchById(id, {
-        name: name || role.name,
-        description: description || role.description
-      });
+      const updatedRole = await Role.findByIdAndUpdate(
+        id,
+        {
+          name: name || role.name,
+          description: description || role.description
+        },
+        { new: true } // Return the updated document
+      );
 
       res.json({
         success: true,
@@ -136,7 +140,7 @@ class RoleController {
       const { id } = req.params;
 
       // Check if role exists
-      const role = await Role.query().findById(id);
+      const role = await Role.findById(id);
       if (!role) {
         return res.status(404).json({
           success: false,
@@ -145,7 +149,7 @@ class RoleController {
       }
 
       // Check if role is assigned to any admin
-      const adminCount = await role.$relatedQuery('admins').count();
+      const adminCount = await role.populate('admins').then(role => role.admins.length);
       if (adminCount > 0) {
         return res.status(400).json({
           success: false,
@@ -153,7 +157,7 @@ class RoleController {
         });
       }
 
-      await Role.query().deleteById(id);
+      await Role.findByIdAndDelete(id);
 
       res.json({
         success: true,

@@ -1,35 +1,28 @@
-const BaseModel = require('./baseModel');
+const mongoose = require('mongoose');
 
-class Role extends BaseModel {
-  static get tableName() {
-    return 'roles';
+const roleSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: true,
+    minlength: 1,
+    maxlength: 50,
+    unique: true
+  },
+  description: {
+    type: String,
+    maxlength: 255
   }
+}, {
+  timestamps: true // This adds createdAt and updatedAt fields automatically
+});
 
-  static get jsonSchema() {
-    return {
-      type: 'object',
-      required: ['name'],
-      properties: {
-        id: { type: 'integer' },
-        name: { type: 'string', minLength: 1, maxLength: 50 },
-        description: { type: 'string', maxLength: 255 }
-      }
-    };
-  }
+// Define the relationship with Admin model
+roleSchema.virtual('admins', {
+  ref: 'Admin',
+  localField: '_id',
+  foreignField: 'role'
+});
 
-  static get relationMappings() {
-    const Admin = require('./Admin');
-    return {
-      admins: {
-        relation: BaseModel.HasManyRelation,
-        modelClass: Admin,
-        join: {
-          from: 'roles.id',
-          to: 'admins.role_id'
-        }
-      }
-    };
-  }
-}
+const Role = mongoose.model('Role', roleSchema);
 
 module.exports = Role;

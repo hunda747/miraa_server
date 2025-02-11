@@ -1,18 +1,24 @@
 // index.js
 const express = require('express');
-const { Model } = require('objection');
+// const { Model } = require('objection');
 const Knex = require('knex');
 require('dotenv').config();
 
+const connectDB = require('./configs/mongodb');
 // ... existing imports and setup ...
 const roleRoutes = require('./routes/roleRoutes');
-
+const adminRoutes = require('./routes/adminRoutes');
+const shopRoutes = require('./routes/shopRoutes');
+const productRoutes = require('./routes/productRoutes');
 // Initialize knex.
-const knexConfig = require('./knexfile');
-const knex = Knex(knexConfig);
+// const knexConfig = require('./knexfile');
+// const knex = Knex(knexConfig);
+
+// Connect to MongoDB
+connectDB();
 
 // Bind all Models to the knex instance.
-Model.knex(knex);
+// Model.knex(knex);
 
 const app = express();
 
@@ -22,16 +28,11 @@ app.use(express.json());
 
 // ... after your middleware setup ...
 app.use('/api/roles', roleRoutes);
+app.use('/api/admins', adminRoutes);
+app.use('/api/shops', shopRoutes);
+app.use('/api/products', productRoutes);
 
-// Test route to check database connection
-app.get('/test-db', async (req, res) => {
-  try {
-    const result = await knex.raw('SELECT 1+1 AS result');
-    res.json({ success: true, result: result[0] });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
+app.use('/uploads', express.static('public/uploads'));
 
 // Start the server
 const PORT = process.env.PORT || 3000;
