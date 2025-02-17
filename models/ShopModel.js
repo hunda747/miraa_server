@@ -38,7 +38,7 @@ const shopSchema = new mongoose.Schema({
     }
   }],
   // other shop details...
-});
+}, { timestamps: true });
 
 // Create 2dsphere index for geospatial queries
 shopSchema.index({ location: '2dsphere' });

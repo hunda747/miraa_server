@@ -5,6 +5,7 @@ const adminController = require('../controllers/adminController.js');
 router.post('/login', adminController.login);
 router.post('/refresh-token', adminController.refreshToken);
 router.post('/', adminController.createAdmin);
+router.get('/current', adminController.getCurrentAdmin);
 router.get('/', adminController.getAllAdmins);
 router.get('/:id', adminController.getAdminById);
 router.put('/:id', adminController.updateAdmin);

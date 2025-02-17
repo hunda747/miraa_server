@@ -10,21 +10,71 @@ class AdminController {
   }
 
   // Generate tokens
-  generateTokens(adminId) {
+  generateTokens(adminId, role) {
     const accessToken = jwt.sign(
-      { id: adminId },
+      {
+        id: adminId,
+        role: role
+      },
       process.env.JWT_ACCESS_SECRET,
-      { expiresIn: '3m' }
+      { expiresIn: '30m' }
     );
 
     const refreshToken = jwt.sign(
       { id: adminId },
       process.env.JWT_REFRESH_SECRET,
       { expiresIn: '6m' }
-      // { expiresIn: '7d' }
     );
 
     return { accessToken, refreshToken };
+  }
+
+  async getCurrentAdmin(req, res) {
+    try {
+      const authHeader = req.headers.authorization;
+
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({
+          success: false,
+          message: 'Access token is required'
+        });
+      }
+
+      const accessToken = authHeader.split(' ')[1];
+
+      // Verify access token
+      const decoded = jwt.verify(accessToken, process.env.JWT_ACCESS_SECRET);
+
+      // Find admin with decoded ID
+      const admin = await Admin.findById(decoded.id).populate('role');
+
+      if (!admin) {
+        return res.status(404).json({
+          success: false,
+          message: 'Admin not found'
+        });
+      }
+
+      res.json({
+        role: admin.role.name,
+        username: admin.username,
+        email: admin.email,
+        _id: admin._id
+      });
+    } catch (error) {
+      if (error instanceof jwt.JsonWebTokenError) {
+        return res.status(401).json({
+          success: false,
+          message: 'Invalid or expired token'
+        });
+      }
+
+      res.status(500).json({
+        success: false,
+        message: 'Error fetching current admin',
+        error: error.message
+      });
+    }
   }
 
   // Login admin
@@ -59,15 +109,11 @@ class AdminController {
       }
 
       // Generate tokens
-      const { accessToken, refreshToken } = this.generateTokens(admin._id);
+      const { accessToken, refreshToken } = this.generateTokens(admin._id, admin.role.name);
 
       res.json({
-        success: true,
-        data: {
-          admin,
-          accessToken,
-          refreshToken
-        }
+        accessToken,
+        refreshToken
       });
     } catch (error) {
       console.log(error);
@@ -94,9 +140,18 @@ class AdminController {
       // Verify refresh token
       const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
 
+      // Find admin to get role
+      const admin = await Admin.findById(decoded.id).populate('role');
+      if (!admin) {
+        return res.status(401).json({
+          success: false,
+          message: 'Admin not found'
+        });
+      }
+
       // Generate new tokens
       const { accessToken: newAccessToken, refreshToken: newRefreshToken } =
-        this.generateTokens(decoded.id);
+        this.generateTokens(decoded.id, admin.role.name);
 
       res.json({
         success: true,

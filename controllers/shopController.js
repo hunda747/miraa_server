@@ -40,7 +40,8 @@ const addShop = async (req, res) => {
         longitude,
         address,
         category,
-        operatingHours,
+        closingTime,
+        openingTime,
         description
       } = req.body;
 
@@ -57,7 +58,10 @@ const addShop = async (req, res) => {
         category,
         isOpen: true,
         image: imagePath,
-        operatingHours
+        operatingHours: {
+          openingTime,
+          closingTime
+        }
       });
 
       await shop.save();
@@ -71,7 +75,7 @@ const addShop = async (req, res) => {
 // Express route handler for finding nearby shops
 const getNearbyShops = async (req, res) => {
   try {
-    const { latitude, longitude, radius = 5000 } = req.query; // radius in meters
+    const { latitude, longitude, radius = 50000 } = req.query; // radius in meters
 
     const shops = await Shop.find({
       location: {
@@ -186,8 +190,32 @@ function deg2rad(deg) {
 // Get all shops
 const getAllShops = async (req, res) => {
   try {
-    const shops = await Shop.find({ isOpen: true });
-    res.json(shops);
+    const { latitude, longitude } = req.query;
+    const shops = await Shop.find({ isOpen: true })
+      .populate('products.product')
+      .select('+createdAt +updatedAt'); // Explicitly include timestamp fields
+
+    let shopsData = shops;
+
+    // If coordinates are provided, calculate distances
+    if (latitude && longitude) {
+      shopsData = shops.map(shop => {
+        const distance = calculateDistance(
+          { lat: parseFloat(latitude), long: parseFloat(longitude) },
+          {
+            lat: shop.location.coordinates[1],
+            long: shop.location.coordinates[0]
+          }
+        );
+
+        return {
+          ...shop.toObject(),
+          distance: Math.round(distance * 100) / 100
+        };
+      });
+    }
+
+    res.json(shopsData);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -196,7 +224,10 @@ const getAllShops = async (req, res) => {
 // Get shop by ID
 const getShopById = async (req, res) => {
   try {
-    const shop = await Shop.findById(req.params.id);
+    const shop = await Shop.findById(req.params.id)
+      .populate('products.product')
+      .select('+createdAt +updatedAt'); // Explicitly include timestamp fields
+
     if (!shop) {
       return res.status(404).json({ message: 'Shop not found' });
     }

@@ -1,5 +1,6 @@
 // index.js
 const express = require('express');
+const cors = require('cors');
 // const { Model } = require('objection');
 const Knex = require('knex');
 require('dotenv').config();
@@ -23,6 +24,7 @@ connectDB();
 const app = express();
 
 // Middleware
+app.use(cors({ origin: '*' }));
 app.use(express.json());
 
 
