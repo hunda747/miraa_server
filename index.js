@@ -11,6 +11,9 @@ const roleRoutes = require('./routes/roleRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const shopRoutes = require('./routes/shopRoutes');
 const productRoutes = require('./routes/productRoutes');
+const userRoutes = require('./routes/userRoutes');
+const orderRoutes = require('./routes/orderRoutes');
+
 // Initialize knex.
 // const knexConfig = require('./knexfile');
 // const knex = Knex(knexConfig);
@@ -33,11 +36,13 @@ app.use('/api/roles', roleRoutes);
 app.use('/api/admins', adminRoutes);
 app.use('/api/shops', shopRoutes);
 app.use('/api/products', productRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/orders', orderRoutes);
 
 app.use('/uploads', express.static('public/uploads'));
 
 // Start the server
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 7000;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });

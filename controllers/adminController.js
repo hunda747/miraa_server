@@ -17,7 +17,7 @@ class AdminController {
         role: role
       },
       process.env.JWT_ACCESS_SECRET,
-      { expiresIn: '30m' }
+      { expiresIn: '3m' }
     );
 
     const refreshToken = jwt.sign(
