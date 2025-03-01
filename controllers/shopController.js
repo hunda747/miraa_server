@@ -169,10 +169,6 @@ const searchShops = async (req, res) => {
   }
 };
 
-
-
-
-
 // Get all shops
 const getAllShops = async (req, res) => {
   try {
@@ -324,6 +320,7 @@ const addProductToShop = async (req, res) => {
       data: updatedShop
     });
   } catch (error) {
+    console.log(error);
     res.status(500).json({
       success: false,
       error: 'Server Error'
@@ -438,6 +435,38 @@ const getShopProducts = async (req, res) => {
   }
 };
 
+const searchShopByProduct = async (req, res) => {
+  try {
+    const { productId } = req.params;
+    const { latitude, longitude } = req.query;
+
+    const shops = await Shop.find({ products: { $elemMatch: { product: productId } } });
+
+    const shopsWithDistance = (latitude && longitude) ? shops.map(shop => {
+      const distance = calculateDistance(
+        { lat: latitude, long: longitude },
+        {
+          lat: shop.location.coordinates[1],
+          long: shop.location.coordinates[0]
+        }
+      );
+
+      return {
+        ...shop.toObject(),
+        distance: Math.round(distance * 100) / 100 // Round to 2 decimal places
+      };
+    }) : shops;
+
+    res.status(200).json(shopsWithDistance);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({
+      success: false,
+      error: 'Server Error'
+    });
+  }
+}
+
 module.exports = {
   addShop,
   getNearbyShops,
@@ -449,5 +478,6 @@ module.exports = {
   addProductToShop,
   updateShopProduct,
   removeProductFromShop,
-  getShopProducts
+  getShopProducts,
+  searchShopByProduct
 };

@@ -22,6 +22,11 @@ const adminSchema = new mongoose.Schema({
     minlength: 6,
     maxlength: 255
   },
+  shop: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Shop',
+    required: false
+  },
   role: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Role'

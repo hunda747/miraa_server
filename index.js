@@ -13,6 +13,7 @@ const shopRoutes = require('./routes/shopRoutes');
 const productRoutes = require('./routes/productRoutes');
 const userRoutes = require('./routes/userRoutes');
 const orderRoutes = require('./routes/orderRoutes');
+const deliveryChargeRoutes = require('./routes/deliveryChargeRoutes');
 
 // Initialize knex.
 // const knexConfig = require('./knexfile');
@@ -38,7 +39,7 @@ app.use('/api/shops', shopRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/orders', orderRoutes);
-
+app.use('/api/delivery-charges', deliveryChargeRoutes);
 app.use('/uploads', express.static('public/uploads'));
 
 // Start the server

@@ -78,12 +78,15 @@ const userController = {
         });
       }
 
-      const { accessToken, refreshToken } = generateTokens(user._id);
+      const accessToken = generateTokens(user._id).accessToken;
+      const refreshToken = generateTokens(user._id).refreshToken;
+      console.log("user", user);
 
-      res.json(
+      // Return a proper JSON response with both tokens
+      res.json({
         accessToken,
         refreshToken
-      );
+      });
     } catch (error) {
       res.status(500).json({ message: error.message });
     }

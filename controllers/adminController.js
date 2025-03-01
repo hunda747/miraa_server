@@ -171,7 +171,7 @@ class AdminController {
   // Create admin
   async createAdmin(req, res) {
     try {
-      const { username, email, password, roleId } = req.body;
+      const { username, email, password, roleId, shopId } = req.body;
 
       // Validate required fields
       if (!username || !email || !password) {
@@ -197,7 +197,8 @@ class AdminController {
         username,
         email,
         password,
-        role: roleId
+        role: roleId,
+        shop: shopId
       });
 
       res.status(201).json({
@@ -217,7 +218,7 @@ class AdminController {
   // Get all admins
   async getAllAdmins(req, res) {
     try {
-      const admins = await Admin.find().populate('role');
+      const admins = await Admin.find().populate('role').populate('shop');
       res.json({
         success: true,
         data: admins
@@ -235,7 +236,7 @@ class AdminController {
   async getAdminById(req, res) {
     try {
       const { id } = req.params;
-      const admin = await Admin.findById(id).populate('role');
+      const admin = await Admin.findById(id).populate('role', 'name').populate('shop', 'name');
 
       if (!admin) {
         return res.status(404).json({
@@ -257,11 +258,33 @@ class AdminController {
     }
   }
 
+  async getAdminProfile(req, res) {
+    console.log("getAdminProfile", req.user);
+    try {
+      const admin = await Admin.findById(req.user.id).populate('role', 'name').populate('shop', 'name');
+
+      if (!admin) {
+        return res.status(404).json({
+          success: false,
+          message: 'Admin not found'
+        });
+      }
+
+      res.json(admin);
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Error fetching admin profile',
+        error: error.message
+      });
+    }
+  }
+
   // Update admin
   async updateAdmin(req, res) {
     try {
       const { id } = req.params;
-      const { username, email, password, roleId } = req.body;
+      const { username, email, password, roleId, shopId } = req.body;
 
       // Check if admin exists
       const admin = await Admin.findById(id);
@@ -294,7 +317,8 @@ class AdminController {
         ...(username && { username }),
         ...(email && { email }),
         ...(password && { password }),
-        ...(roleId && { role: roleId })
+        ...(roleId && { role: roleId }),
+        ...(shopId && { shop: shopId })
       };
 
       const updatedAdmin = await Admin.findByIdAndUpdate(

@@ -6,9 +6,8 @@ const auth = async (req, res, next) => {
     // if (req.header('AuthorizationS')) {
     //   return res.status(403).json({ message: 'Please login to continue' });
     // }
-    const token = req.header('Authorization').replace('Bearer ', '');
-    console.log("token", token);
 
+    const token = req.header('Authorization').replace('Bearer ', '');
     const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
     req.user = decoded;
     next();
@@ -18,4 +17,20 @@ const auth = async (req, res, next) => {
   }
 };
 
-module.exports = auth; 
+const authAdmin = async (req, res, next) => {
+  try {
+    const token = req.header('Authorization').replace('Bearer ', '');
+    const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
+    req.user = decoded;
+
+    if (decoded.role === 'USER') {
+      return res.status(403).json({ message: 'Unauthorized' });
+    }
+
+    next();
+  } catch (error) {
+    res.status(401).json({ message: 'Please authenticate' });
+  }
+};
+
+module.exports = { auth, authAdmin }; 

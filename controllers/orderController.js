@@ -1,6 +1,8 @@
 const Order = require('../models/OrderModel');
 const Shop = require('../models/ShopModel');
+const Admin = require('../models/AdminModel');
 const { calculateDistance } = require('../utils/direction');
+const { calculateDeliveryCharge } = require('./deliveryChargeController');
 
 // Create new order
 exports.createOrder = async (req, res) => {
@@ -25,7 +27,7 @@ exports.createOrder = async (req, res) => {
     console.log({ lat: deliveryLocation[0], long: deliveryLocation[1] }, { lat: shop.location.coordinates[0], long: shop.location.coordinates[1] });
 
     const distance = calculateDistance({ lat: deliveryLocation[0], long: deliveryLocation[1] }, { lat: shop.location.coordinates[0], long: shop.location.coordinates[1] });
-    const deliveryCharge = calculateDeliveryCharge(distance);
+    const deliveryCharge = await calculateDeliveryCharge(distance);
     // Calculate total amount
     const totalAmount = items.reduce((sum, item) =>
       sum + (item.price * item.quantity), 0);
@@ -61,17 +63,24 @@ exports.createOrder = async (req, res) => {
 
 // Get all orders (with filtering and pagination)
 exports.getOrders = async (req, res) => {
+
   try {
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
+    const limit = parseInt(req.query.limit) || 100;
     const status = req.query.status;
-    const userId = req.query.userId;
+    const userId = req.user.role === 'USER' ? req.user.userId : req.query.userId;
 
     let query = {};
 
     // Add filters if provided
     if (status) query.status = status;
     if (userId) query.user = userId;
+
+    if (req.user.role === 'SHOP_OWNER' || req.user.role === 'DELIVERY') {
+      console.log("req.user", req.user);
+      const admin = await Admin.findById(req.user.id);
+      query.shop = admin.shop;
+    }
 
     const orders = await Order.find(query)
       .populate('user', 'name email')
@@ -128,6 +137,17 @@ exports.getOrder = async (req, res) => {
   }
 };
 
+exports.getMyOrders = async (req, res) => {
+  try {
+    const orders = await Order.find({ user: req.user.userId }).populate('user', 'name email')
+      .populate('shop', 'name image')
+      .populate('items.product', 'name image');
+
+    res.status(200).json({ success: true, data: orders });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+};
 // Update order status
 exports.updateOrderStatus = async (req, res) => {
   try {
@@ -198,17 +218,6 @@ exports.deleteOrder = async (req, res) => {
       error: error.message
     });
   }
-};
-
-// Helper function to calculate delivery charge
-const calculateDeliveryCharge = (distance) => {
-  // Base charge
-  let charge = 20;
-
-  // Add additional charge per km
-  charge += Math.ceil(distance) * 10;
-
-  return charge;
 };
 
 // Helper function to validate status transitions

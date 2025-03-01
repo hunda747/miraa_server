@@ -5,15 +5,17 @@ const {
   getOrders,
   getOrder,
   updateOrderStatus,
-  deleteOrder
+  deleteOrder,
+  getMyOrders
 } = require('../controllers/orderController');
-const auth = require('../middleware/auth');
+const { auth } = require('../middleware/auth');
 
 // Create new order
 router.post('/', auth, createOrder);
-router.get('/', getOrders);
+router.get('/', auth, getOrders);
 router.get('/:id', getOrder);
 router.patch('/:id/status', updateOrderStatus);
 router.delete('/:id', deleteOrder);
+router.get('/mine', auth, getMyOrders);
 
 module.exports = router;

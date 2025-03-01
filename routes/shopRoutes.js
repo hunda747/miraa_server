@@ -11,7 +11,8 @@ const {
   addProductToShop,
   updateShopProduct,
   removeProductFromShop,
-  getShopProducts
+  getShopProducts,
+  searchShopByProduct
 } = require('../controllers/shopController');
 
 // Route to add a new shop
@@ -24,9 +25,9 @@ router.get('/:id', getShopById);
 router.put('/:id', updateShop);
 
 // Product management routes
+router.get('/:productId/search', searchShopByProduct);
 router.post('/:shopId/products', addProductToShop);
 router.put('/:shopId/products/:productId', updateShopProduct);
 router.delete('/:shopId/products/:productId', removeProductFromShop);
 router.get('/:shopId/products', getShopProducts);
-
 module.exports = router;
