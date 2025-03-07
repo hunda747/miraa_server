@@ -6,8 +6,8 @@ class RoleController {
     try {
       const roles = await Role.find();
       const filteredRoles = roles.filter(role => role.name !== 'SUPER_ADMIN');
-      console.log("filteredRoles", filteredRoles);
-      console.log("roles", roles);
+      // console.log("filteredRoles", filteredRoles);
+      // console.log("roles", roles);
       res.json(
         filteredRoles
       );

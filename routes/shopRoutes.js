@@ -8,12 +8,15 @@ const {
   getAllShops,
   getShopById,
   updateShop,
+  updateShopStatus,
   addProductToShop,
   updateShopProduct,
   removeProductFromShop,
   getShopProducts,
-  searchShopByProduct
+  searchShopByProduct,
+  getAllShopsForAdmin
 } = require('../controllers/shopController');
+const { authAdmin } = require('../middleware/auth');
 
 // Route to add a new shop
 router.post('/', addShop);
@@ -21,8 +24,10 @@ router.get('/nearby', getNearbyShops);
 router.get('/category', getShopsByCategory);
 router.get('/search', searchShops);
 router.get('/', getAllShops);
+router.get('/admin', authAdmin, getAllShopsForAdmin);
 router.get('/:id', getShopById);
 router.put('/:id', updateShop);
+router.put('/:shopId/status', updateShopStatus);
 
 // Product management routes
 router.get('/:productId/search', searchShopByProduct);

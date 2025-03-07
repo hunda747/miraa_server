@@ -218,7 +218,7 @@ const userController = {
     try {
       const { userId } = req.params;
       const { fullName, email, phone, status } = req.body;
-
+      console.log("userId", userId);
       const updateData = {};
       if (fullName) updateData.fullName = fullName;
       if (email) updateData.email = email;
@@ -226,6 +226,10 @@ const userController = {
       if (status) updateData.status = status;
 
       const user = await User.findByIdAndUpdate(userId, updateData, { new: true, runValidators: true });
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
       res.json(user);
     } catch (error) {
       console.log("error", error);

@@ -8,7 +8,7 @@ router.post('/login', userController.login);
 router.post('/google-login', userController.googleLogin);
 router.post('/refresh-token', userController.refreshToken);
 router.get('/profile', auth, userController.getProfile);
-router.put('/profile/:id', authAdmin, userController.updateUserByAdmin);
+router.put('/profile/:userId', authAdmin, userController.updateUserByAdmin);
 router.put('/profile', auth, userController.updateUser);
 router.delete('/profile', auth, userController.deleteUser);
 router.post('/forgot-password', userController.forgotPassword);

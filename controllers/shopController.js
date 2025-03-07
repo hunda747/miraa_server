@@ -204,6 +204,40 @@ const getAllShops = async (req, res) => {
   }
 };
 
+// Get all shops for admin (both open and closed)
+const getAllShopsForAdmin = async (req, res) => {
+  try {
+    const { latitude, longitude } = req.query;
+    const shops = await Shop.find({}) // No filter on isOpen status
+      .populate('products.product')
+      .select('+createdAt +updatedAt');
+
+    let shopsData = shops;
+
+    // If coordinates are provided, calculate distances
+    if (latitude && longitude) {
+      shopsData = shops.map(shop => {
+        const distance = calculateDistance(
+          { lat: parseFloat(latitude), long: parseFloat(longitude) },
+          {
+            lat: shop.location.coordinates[1],
+            long: shop.location.coordinates[0]
+          }
+        );
+
+        return {
+          ...shop.toObject(),
+          distance: Math.round(distance * 100) / 100
+        };
+      });
+    }
+
+    res.json(shopsData);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 // Get shop by ID
 const getShopById = async (req, res) => {
   try {
@@ -246,7 +280,8 @@ const updateShop = async (req, res) => {
         category,
         isOpen,
         operatingHours,
-        description
+        description,
+        status
       } = req.body;
 
       const imagePath = req.file ? `/uploads/shops/${req.file.filename}` : undefined;
@@ -264,7 +299,8 @@ const updateShop = async (req, res) => {
           category,
           isOpen,
           ...(imagePath && { image: imagePath }),
-          operatingHours
+          operatingHours,
+          status
         },
         { new: true, runValidators: true }
       );
@@ -275,6 +311,26 @@ const updateShop = async (req, res) => {
 
       res.json(updatedShop);
     });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Update shop status
+const updateShopStatus = async (req, res) => {
+  try {
+    const { shopId } = req.params;
+    const { isOpen } = req.body;
+    console.log("status", isOpen, shopId);
+    const shop = await Shop.findById(shopId);
+    if (!shop) {
+      return res.status(404).json({ message: 'Shop not found' });
+    }
+
+    shop.isOpen = isOpen;
+    await shop.save();
+
+    res.json(shop);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -495,8 +551,10 @@ module.exports = {
   getShopsByCategory,
   searchShops,
   getAllShops,
+  getAllShopsForAdmin,
   getShopById,
   updateShop,
+  updateShopStatus,
   addProductToShop,
   updateShopProduct,
   removeProductFromShop,
