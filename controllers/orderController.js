@@ -14,6 +14,7 @@ exports.createOrder = async (req, res) => {
       deliveryAddress,
       paymentMethod
     } = req.body;
+
     const shop = await Shop.findById(shopId);
     if (!shop) {
       return res.status(404).json({
@@ -21,13 +22,33 @@ exports.createOrder = async (req, res) => {
         error: 'Shop not found'
       });
     }
-    // const distance = 10;
-    // Calculate delivery charge based on distance
-    // console.log(shop);
-    console.log({ lat: deliveryLocation[0], long: deliveryLocation[1] }, { lat: shop.location.coordinates[0], long: shop.location.coordinates[1] });
 
+    // Verify all items are available in sufficient quantity
+    for (const item of items) {
+      const shopProduct = shop.products.find(
+        p => p.product.toString() === item.product
+      );
+
+      if (!shopProduct) {
+        return res.status(400).json({
+          success: false,
+          error: `Product ${item.product} not found in shop`
+        });
+      }
+
+      // if (shopProduct.quantity < item.quantity) {
+      //   return res.status(400).json({
+      //     success: false,
+      //     error: `Insufficient quantity for product ${item.product}. Available: ${shopProduct.quantity}, Requested: ${item.quantity}`
+      //   });
+      // }
+    }
+
+    // Calculate distance and delivery charge
+    console.log({ lat: deliveryLocation[0], long: deliveryLocation[1] }, { lat: shop.location.coordinates[0], long: shop.location.coordinates[1] });
     const distance = calculateDistance({ lat: deliveryLocation[0], long: deliveryLocation[1] }, { lat: shop.location.coordinates[0], long: shop.location.coordinates[1] });
     const deliveryCharge = await calculateDeliveryCharge(distance);
+
     // Calculate total amount
     const totalAmount = items.reduce((sum, item) =>
       sum + (item.price * item.quantity), 0);
@@ -49,6 +70,19 @@ exports.createOrder = async (req, res) => {
 
     await order.save();
 
+    // Decrease product quantities
+    for (const item of items) {
+      const productIndex = shop.products.findIndex(
+        p => p.product.toString() === item.product
+      );
+
+      shop.products[productIndex].quantity = (shop.products[productIndex].quantity - item.quantity) < 0 ? 0 : shop.products[productIndex].quantity - item.quantity;
+      // Update inStock status based on new quantity
+      shop.products[productIndex].inStock = shop.products[productIndex].quantity > 0;
+    }
+
+    await shop.save();
+
     res.status(201).json({
       success: true,
       data: order
@@ -69,12 +103,26 @@ exports.getOrders = async (req, res) => {
     const limit = parseInt(req.query.limit) || 100;
     const status = req.query.status;
     const userId = req.user.role === 'USER' ? req.user.userId : req.query.userId;
+    const startDate = req.query.startDate;
+    const endDate = req.query.endDate;
 
     let query = {};
 
     // Add filters if provided
     if (status) query.status = status;
     if (userId) query.user = userId;
+
+    // Add date range filter if provided
+    if (startDate || endDate) {
+      query.createdAt = {};
+      if (startDate) query.createdAt.$gte = new Date(startDate);
+      if (endDate) {
+        // Set endDate to end of the day
+        const endOfDay = new Date(endDate);
+        endOfDay.setHours(23, 59, 59, 999);
+        query.createdAt.$lte = endOfDay;
+      }
+    }
 
     if (req.user.role === 'SHOP_OWNER' || req.user.role === 'DELIVERY') {
       console.log("req.user", req.user);

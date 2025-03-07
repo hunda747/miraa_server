@@ -7,7 +7,7 @@ const auth = async (req, res, next) => {
     //   return res.status(403).json({ message: 'Please login to continue' });
     // }
 
-    const token = req.header('Authorization').replace('Bearer ', '');
+    const token = req.header('Authorization')?.replace('Bearer ', '');
     const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
     req.user = decoded;
     next();
@@ -19,7 +19,7 @@ const auth = async (req, res, next) => {
 
 const authAdmin = async (req, res, next) => {
   try {
-    const token = req.header('Authorization').replace('Bearer ', '');
+    const token = req.header('Authorization')?.replace('Bearer ', '');
     const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
     req.user = decoded;
 

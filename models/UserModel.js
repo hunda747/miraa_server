@@ -7,12 +7,32 @@ const userSchema = new mongoose.Schema({
     required: true,
     maxlength: 100,
   },
-  email: {
+  username: {
     type: String,
     required: true,
+    unique: true,
+  },
+  email: {
+    type: String,
+    required: false,
     maxlength: 100,
     unique: true,
+    sparse: true,
     match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Please provide a valid email']
+  },
+  phone: {
+    type: String,
+    required: false,
+    maxlength: 10,
+    unique: true,
+    sparse: true,
+    match: [/^\d{10}$/, 'Please provide a valid 10-digit phone number']
+  },
+  status: {
+    type: String,
+    required: false,
+    enum: ['active', 'inactive'],
+    default: 'active'
   },
   password: {
     type: String,
@@ -42,6 +62,23 @@ userSchema.pre('save', async function (next) {
 userSchema.methods.verifyPassword = async function (password) {
   return bcrypt.compare(password, this.password);
 };
+
+// Add validation to ensure either email or phone is provided
+userSchema.pre('validate', function (next) {
+  if (!this.email && !this.phone) {
+    this.invalidate('email', 'Either email or phone must be provided');
+    this.invalidate('phone', 'Either email or phone must be provided');
+  }
+
+  // Set username based on phone (priority) or email
+  if (this.phone) {
+    this.username = this.phone;
+  } else if (this.email) {
+    this.username = this.email;
+  }
+
+  next();
+});
 
 const User = mongoose.model('User', userSchema);
 module.exports = User;

@@ -5,10 +5,12 @@ class RoleController {
   async getAllRoles(req, res) {
     try {
       const roles = await Role.find();
-      res.json({
-        success: true,
-        data: roles
-      });
+      const filteredRoles = roles.filter(role => role.name !== 'SUPER_ADMIN');
+      console.log("filteredRoles", filteredRoles);
+      console.log("roles", roles);
+      res.json(
+        filteredRoles
+      );
     } catch (error) {
       res.status(500).json({
         success: false,

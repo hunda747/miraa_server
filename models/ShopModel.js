@@ -32,9 +32,16 @@ const shopSchema = new mongoose.Schema({
       type: Number,
       required: true
     },
+    quantity: {
+      type: Number,
+      required: true,
+      default: 0
+    },
     inStock: {
       type: Boolean,
-      default: true
+      default: function () {
+        return this.quantity > 0;
+      }
     }
   }],
   // other shop details...

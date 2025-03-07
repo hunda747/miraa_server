@@ -1,4 +1,5 @@
 const Shop = require('../models/ShopModel');
+const Admin = require('../models/AdminModel');
 const multer = require('multer');
 const path = require('path');
 const { calculateDistance } = require('../utils/direction');
@@ -213,7 +214,17 @@ const getShopById = async (req, res) => {
     if (!shop) {
       return res.status(404).json({ message: 'Shop not found' });
     }
-    res.json(shop);
+
+    // Find admins associated with this shop
+    const admins = await Admin.find({ shop: req.params.id }).populate('role').select('-password');
+
+    // Create response object with shop data and admins
+    const shopWithAdmins = {
+      ...shop.toObject(),
+      admins
+    };
+
+    res.json(shopWithAdmins);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -273,13 +284,20 @@ const updateShop = async (req, res) => {
 const addProductToShop = async (req, res) => {
   try {
     const { shopId } = req.params;
-    const { productId, price } = req.body;
+    const { productId, price, quantity = 0 } = req.body;
 
     // Validate inputs
     if (!price || price <= 0) {
       return res.status(400).json({
         success: false,
         error: 'Valid price is required'
+      });
+    }
+
+    if (quantity < 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Quantity cannot be negative'
       });
     }
 
@@ -306,7 +324,8 @@ const addProductToShop = async (req, res) => {
     shop.products.push({
       product: productId,
       price,
-      inStock: true
+      quantity,
+      inStock: quantity > 0
     });
 
     await shop.save();
@@ -332,7 +351,7 @@ const addProductToShop = async (req, res) => {
 const updateShopProduct = async (req, res) => {
   try {
     const { shopId, productId } = req.params;
-    const { price, inStock } = req.body;
+    const { price, quantity } = req.body;
 
     const shop = await Shop.findById(shopId);
     if (!shop) {
@@ -356,7 +375,10 @@ const updateShopProduct = async (req, res) => {
 
     // Update the product details
     if (price !== undefined) shop.products[productIndex].price = price;
-    if (inStock !== undefined) shop.products[productIndex].inStock = inStock;
+    if (quantity !== undefined) {
+      shop.products[productIndex].quantity = quantity;
+      shop.products[productIndex].inStock = quantity > 0;
+    }
 
     await shop.save();
 

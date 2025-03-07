@@ -17,13 +17,13 @@ class AdminController {
         role: role
       },
       process.env.JWT_ACCESS_SECRET,
-      { expiresIn: '3m' }
+      { expiresIn: '30m' }
     );
 
     const refreshToken = jwt.sign(
       { id: adminId },
       process.env.JWT_REFRESH_SECRET,
-      { expiresIn: '6m' }
+      { expiresIn: '60m' }
     );
 
     return { accessToken, refreshToken };
@@ -171,7 +171,7 @@ class AdminController {
   // Create admin
   async createAdmin(req, res) {
     try {
-      const { username, email, password, roleId, shopId } = req.body;
+      const { username, email, password, roleId, shopId, phone } = req.body;
 
       // Validate required fields
       if (!username || !email || !password) {
@@ -198,7 +198,8 @@ class AdminController {
         email,
         password,
         role: roleId,
-        shop: shopId
+        shop: shopId,
+        phone
       });
 
       res.status(201).json({
@@ -259,7 +260,7 @@ class AdminController {
   }
 
   async getAdminProfile(req, res) {
-    console.log("getAdminProfile", req.user);
+    // console.log("getAdminProfile", req.user);
     try {
       const admin = await Admin.findById(req.user.id).populate('role', 'name').populate('shop', 'name');
 
@@ -284,7 +285,7 @@ class AdminController {
   async updateAdmin(req, res) {
     try {
       const { id } = req.params;
-      const { username, email, password, roleId, shopId } = req.body;
+      const { username, email, password, roleId, shopId, phone } = req.body;
 
       // Check if admin exists
       const admin = await Admin.findById(id);
@@ -318,7 +319,8 @@ class AdminController {
         ...(email && { email }),
         ...(password && { password }),
         ...(roleId && { role: roleId }),
-        ...(shopId && { shop: shopId })
+        ...(shopId && { shop: shopId }),
+        ...(phone && { phone: phone })
       };
 
       const updatedAdmin = await Admin.findByIdAndUpdate(
